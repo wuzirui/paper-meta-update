@@ -1,5 +1,98 @@
 import { getLocaleID, getString } from "../utils/locale";
 
+function getSupportedConferences() {
+  const conferences = {
+    "CVPR'25": "CVPR 2025",
+    "CVPR'24": "CVPR 2024",
+    "CVPR'23": "CVPR 2023",
+    // "CVPR'22": "CVPR 2022",
+    // "CVPR'21": "CVPR 2021",
+    // "CVPR'20": "CVPR 2020",
+    // "CVPR'19": "CVPR 2019",
+    // "CVPR'18": "CVPR 2018",
+    // "CVPR'17": "CVPR 2017",
+    // "CVPR'16": "CVPR 2016",
+    // "CVPR'15": "CVPR 2015",
+    // "CVPR'14": "CVPR 2014",
+    // "CVPR'13": "CVPR 2013",
+  };
+  return conferences;
+}
+
+function getConfProceedings(ConfName: string) {
+  // for CVPR confs (2013~2025), return "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition"
+  if (ConfName.startsWith("CVPR")) {
+    return "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition";
+  }
+  return "Unknown";
+}
+
+function getConfYear(ConfName: string) {
+  const confyear = {
+    "CVPR'25": "2025",
+    "CVPR'24": "2024",
+    "CVPR'23": "2023",
+    "CVPR'22": "2022",
+    "CVPR'21": "2021",
+    "CVPR'20": "2020",
+    "CVPR'19": "2019",
+    "CVPR'18": "2018",
+    "CVPR'17": "2017",
+    "CVPR'16": "2016",
+    "CVPR'15": "2015",
+    "CVPR'14": "2014",
+    "CVPR'13": "2013",
+  };
+  return confyear[ConfName];
+}
+
+function getConfFullName(ConfName: string) {
+  // for CVPR confs (2013~2025), return "IEEE/CVF Conference on Computer Vision and Pattern Recognition"
+  if (ConfName.startsWith("CVPR")) {
+    return "IEEE/CVF Conference on Computer Vision and Pattern Recognition";
+  }
+  return "Unknown";
+}
+
+function getConfPublisher(ConfName: string) {
+  // for CVPR confs (2013~2025), return "IEEE"
+  if (ConfName.startsWith("CVPR")) {
+    return "IEEE";
+  }
+  return "Unknown";
+}
+
+function getConfWebsites(ConfName: string) {
+  const webs = {
+    "CVPR'25": ["https://cvpr.thecvf.com/Conferences/2025/AcceptedPapers"],
+    "CVPR'24": ["https://cvpr.thecvf.com/Conferences/2024/AcceptedPapers"],
+    "CVPR'23": ["https://cvpr.thecvf.com/Conferences/2023/AcceptedPapers"],
+    "CVPR'22": ["https://openaccess.thecvf.com/CVPR2022?day=all"],
+    "CVPR'21": ["https://openaccess.thecvf.com/CVPR2021?day=all"],
+    "CVPR'20": [
+      "https://openaccess.thecvf.com/CVPR2020?day=2020-06-16",
+      "https://openaccess.thecvf.com/CVPR2020?day=2020-06-17",
+      "https://openaccess.thecvf.com/CVPR2020?day=2020-06-18"
+    ],
+    "CVPR'19": [
+      "https://openaccess.thecvf.com/CVPR2019?day=2019-06-18",
+      "https://openaccess.thecvf.com/CVPR2019?day=2019-06-19",
+      "https://openaccess.thecvf.com/CVPR2019?day=2019-06-20"
+    ],
+    "CVPR'18": [
+      "https://openaccess.thecvf.com/CVPR2018?day=2018-06-19",
+      "https://openaccess.thecvf.com/CVPR2018?day=2018-06-20",
+      "https://openaccess.thecvf.com/CVPR2018?day=2018-06-21"
+    ],
+    "CVPR'17": ["https://openaccess.thecvf.com/CVPR2017"],
+    "CVPR'16": ["https://openaccess.thecvf.com/CVPR2016"],
+    "CVPR'15": ["https://openaccess.thecvf.com/CVPR2015"],
+    "CVPR'14": ["https://openaccess.thecvf.com/CVPR2014"],
+    "CVPR'13": ["https://openaccess.thecvf.com/CVPR2013"],
+  }
+  return webs[ConfName];
+}
+
 function example(
   target: any,
   propertyKey: string | symbol,
@@ -350,15 +443,16 @@ export class UIExampleFactory {
 export class PromptExampleFactory {
   @example
   static registerNormalCommandExample(hooks: any) {
-    ztoolkit.Prompt.register([
-      {
-        name: "Process All CVPR'25 Papers",
-        label: "Plugin Template",
-        callback(prompt) {
-          hooks();
-        },
+    const conferences = getSupportedConferences();
+    const entries = Object.keys(conferences).map((conf) => ({
+      name: `Process All ${conferences[conf]} Papers`,
+      label: "Paper Metadata Update",
+      callback(prompt) {
+      hooks(conf, getConfWebsites(conf), getConfProceedings(conf), getConfFullName(conf), getConfPublisher(conf));
       },
-    ]);
+    }));
+
+    ztoolkit.Prompt.register(entries);
   }
 
   @example

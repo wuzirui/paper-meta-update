@@ -57,11 +57,11 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     })
     .show();
 
-  await Zotero.Promise.delay(1000);
-  popupWin.changeLine({
-    progress: 30,
-    text: `[30%] ${getString("startup-begin")}`,
-  });
+  // await Zotero.Promise.delay(1000);
+  // popupWin.changeLine({
+  //   progress: 30,
+  //   text: `[30%] ${getString("startup-begin")}`,
+  // });
 
   UIExampleFactory.registerStyleSheet(win);
 
@@ -71,7 +71,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
 
   UIExampleFactory.registerWindowMenuWithSeparator();
 
-  PromptExampleFactory.registerNormalCommandExample(processCVPR2025Metadata);
+  PromptExampleFactory.registerNormalCommandExample(processConfMetadata);
 
   // PromptExampleFactory.registerAnonymousCommandExample(win);
 
@@ -154,7 +154,8 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 //   }
 // }
 
-async function fetchCVPR2025Metadata(url: string) {
+
+async function fetchConfMetadata(url: string) {
   const papers: { title: string; authors: string[] }[] = [];
   try {
     // Fetch the webpage content
@@ -171,7 +172,8 @@ async function fetchCVPR2025Metadata(url: string) {
     // Extract paper titles and authors
     const rows = document.querySelectorAll("tr"); // Iterate over table rows
     rows.forEach((row) => {
-      const titleTag = row.querySelector("strong"); // Find the title in <strong>
+      // Find the title in <strong> or <a>
+      const titleTag = row.querySelector("strong") || row.querySelector("a");
       const authorsTag = row.querySelector("div.indented"); // Find authors in <div class="indented">
 
       if (titleTag && authorsTag) {
@@ -183,37 +185,41 @@ async function fetchCVPR2025Metadata(url: string) {
       }
     });
   } catch (error) {
-    console.error("Error fetching CVPR 2025 metadata:", error);
+    ztoolkit.getGlobal("alert")(
+      `Error fetching conference metadata: ${error.message}`
+    );
   }
   return papers;
 }
 
+async function debugNotice(msg) {
+  return;
+  ztoolkit.getGlobal("alert")(
+    `Debug Notice: ${msg}`
+  );
+}
 
-async function processCVPR2025Metadata() {
-  const ZoteroPane = Zotero.getActiveZoteroPane();
-  const currentLibrary = ZoteroPane.getSelectedCollection();
-  const moveToLibrary = currentLibrary ? true : false;
-  const currentLibraryName = currentLibrary?.name || "No selected library";
-  // ztoolkit.getGlobal("alert")(
-  //   `Current library name: ${currentLibraryName}, moveToLibrary: ${moveToLibrary}` 
-  // );
-  ztoolkit.getGlobal("alert")("Fetching CVPR 2025 metadata...");
-  const url = "https://cvpr.thecvf.com/Conferences/2025/AcceptedPapers";
-  const papers = await fetchCVPR2025Metadata(url);
-  const numPapers = papers.length;
-  ztoolkit.getGlobal("alert")(`Fetched ${numPapers} papers from CVPR 2025.`);
+
+async function processConfMetadata(confname: string, confurl: string, confproceedings: string, conffullname: string, confpublisher: string) {
 
   // initialize a progress window
-  const popupWin = new ztoolkit.ProgressWindow("Updating CVPR'25 Metadata", {
+  const popupWin = new ztoolkit.ProgressWindow(`Updating ${confname} Metadata`, {
     closeOnClick: true,
     closeTime: -1,
   })
     .createLine({
-      text: getString("cvpr-progress-begin"),
+      text: `Fetching ${confname} metadata...`,
       type: "default",
       progress: 0,
     })
     .show();
+
+  const papers = await fetchConfMetadata(confurl);
+  const numPapers = papers.length;
+  popupWin.changeLine({
+    progress: 0.1,
+    text: `Fetched ${numPapers} papers from ${confname}.`,
+  });
 
   // process every paper
   let found = 0;
@@ -233,9 +239,15 @@ async function processCVPR2025Metadata() {
         text: `[${progress}%] ${title} by ${authors}`,
       });
 
+      debugNotice(
+        `Updating ${title} by ${authors} with ${confname} metadata...`
+      );
       // update the metadata
       const item = await Zotero.Items.getAsync(itemIds[0]);
-      item.setType(11); // Set type to "Conference Paper"
+      debugNotice(`Found item: ${item}`);
+      await item.setType(11); // Set type to "Conference Paper"
+      debugNotice(`Set type to Conference Paper`);
+
       // construct author list
       const creators = authors.map((author) => {
         const [firstName, lastName] = author.split(" ");
@@ -245,29 +257,32 @@ async function processCVPR2025Metadata() {
           creatorType: "author",
         };
       });
-      item.setCreators(creators);
-      item.setField("proceedingsTitle", "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)")
-      item.setField("conferenceName", "IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)");
-      item.setField("publisher", "IEEE");
-      item.setField("DOI", "");
-      item.setField("extra", "");
-      item.setField("accessDate", "");
-      item.setField("libraryCatalog", "");
-      item.setField("extra", "");
-      item.addTag("CVPR'25");
-      item.save();
+      await item.setCreators(creators);
+      debugNotice(`Set authors: ${creators}`);
+      await item.setField("proceedingsTitle", confproceedings);
+      await item.setField("conferenceName", conffullname);
+      await item.setField("publisher", confpublisher);
+      await item.setField("DOI", "");
+      await item.setField("extra", "");
+      await item.setField("accessDate", "");
+      await item.setField("libraryCatalog", "");
+      await item.setField("extra", "");
+      debugNotice(`Set metadata: ${confproceedings}, ${conffullname}, ${confpublisher}`);
+      await item.addTag(confname, 1);
+      await item.saveTx();
+      debugNotice(`Saved item: ${item}`);
       found++;
     }
   }
   ztoolkit.getGlobal("alert")(
-    `Found ${found} papers in Zotero library that is CVPR2025 paper.`
+    `Found ${found} papers in Zotero library that is ${confname} paper.`
   );
 }
 
 function onDialogEvents(type: string) {
   switch (type) {
     case "CVPR2025":
-      processCVPR2025Metadata();
+      processConfMetadata();
       break;
     default:
       break;
