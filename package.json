@@ -1,24 +1,24 @@
 {
-  "name": "zotero-plugin-template",
+  "name": "Paper Meta Update",
   "type": "module",
-  "version": "3.1.0",
-  "description": "Zotero Plugin Template",
+  "version": "0.0.0",
+  "description": "Paper Meta Update",
   "config": {
-    "addonName": "Zotero Plugin Template",
-    "addonID": "addontemplate@euclpts.com",
-    "addonRef": "addontemplate",
-    "addonInstance": "AddonTemplate",
-    "prefsPrefix": "extensions.zotero.addontemplate"
+    "addonName": "Paper Meta Update",
+    "addonID": "paper-meta-update@tztyun.org",
+    "addonRef": "papermetaupdate",
+    "addonInstance": "papermetaupdate",
+    "prefsPrefix": "extensions.zotero.papermetaupdate"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windingwind/zotero-plugin-template.git"
+    "url": "git+https://github.com/wuzirui/paper-meta-update.git"
   },
-  "author": "windingwind",
+  "author": "wuzirui",
   "bugs": {
-    "url": "https://github.com/windingwind/zotero-plugin-template/issues"
+    "url": "https://github.com/wuzirui/paper-meta-update/issues"
   },
-  "homepage": "https://github.com/windingwind/zotero-plugin-template#readme",
+  "homepage": "https://github.com/wuzirui/paper-meta-update#readme",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",
