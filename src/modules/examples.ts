@@ -349,13 +349,13 @@ export class UIExampleFactory {
 
 export class PromptExampleFactory {
   @example
-  static registerNormalCommandExample() {
+  static registerNormalCommandExample(hooks: any) {
     ztoolkit.Prompt.register([
       {
-        name: "Normal Command Test",
+        name: "Process All CVPR'25 Papers",
         label: "Plugin Template",
         callback(prompt) {
-          ztoolkit.getGlobal("alert")("Command triggered!");
+          hooks();
         },
       },
     ]);

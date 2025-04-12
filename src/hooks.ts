@@ -1,5 +1,6 @@
 import {
   BasicExampleFactory,
+  PromptExampleFactory,
   UIExampleFactory
 } from "./modules/examples";
 import { registerPrefsScripts } from "./modules/preferenceScript";
@@ -70,7 +71,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
 
   UIExampleFactory.registerWindowMenuWithSeparator();
 
-  // PromptExampleFactory.registerNormalCommandExample();
+  PromptExampleFactory.registerNormalCommandExample(processCVPR2025Metadata);
 
   // PromptExampleFactory.registerAnonymousCommandExample(win);
 
@@ -188,8 +189,14 @@ async function fetchCVPR2025Metadata(url: string) {
 }
 
 
-
 async function processCVPR2025Metadata() {
+  const ZoteroPane = Zotero.getActiveZoteroPane();
+  const currentLibrary = ZoteroPane.getSelectedCollection();
+  const moveToLibrary = currentLibrary ? true : false;
+  const currentLibraryName = currentLibrary?.name || "No selected library";
+  // ztoolkit.getGlobal("alert")(
+  //   `Current library name: ${currentLibraryName}, moveToLibrary: ${moveToLibrary}` 
+  // );
   ztoolkit.getGlobal("alert")("Fetching CVPR 2025 metadata...");
   const url = "https://cvpr.thecvf.com/Conferences/2025/AcceptedPapers";
   const papers = await fetchCVPR2025Metadata(url);
@@ -209,18 +216,52 @@ async function processCVPR2025Metadata() {
     .show();
 
   // process every paper
+  let found = 0;
   for (let i = 0; i < papers.length; i++) {
     const paper = papers[i];
     const title = paper.title;
-    const authors = paper.authors.join(", ");
+    const authors = paper.authors;
     const progress = Math.round(((i + 1) / numPapers) * 100);
-    popupWin.changeLine({
-      progress: progress,
-      text: `[${progress}%] ${title} by ${authors}`,
-    });
-    await Zotero.Promise.delay(100); // Simulate processing delay
+    
+    // find if the item exist in zotero library
+    const search = new Zotero.Search();
+    search.addCondition("title", "is", title);
+    const itemIds = await search.search();
+    if (itemIds.length > 0) {
+      popupWin.changeLine({
+        progress: progress,
+        text: `[${progress}%] ${title} by ${authors}`,
+      });
+
+      // update the metadata
+      const item = await Zotero.Items.getAsync(itemIds[0]);
+      item.setType(11); // Set type to "Conference Paper"
+      // construct author list
+      const creators = authors.map((author) => {
+        const [firstName, lastName] = author.split(" ");
+        return {
+          firstName: firstName || "",
+          lastName: lastName || "",
+          creatorType: "author",
+        };
+      });
+      item.setCreators(creators);
+      item.setField("proceedingsTitle", "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)")
+      item.setField("conferenceName", "IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)");
+      item.setField("publisher", "IEEE");
+      item.setField("DOI", "");
+      item.setField("extra", "");
+      item.setField("accessDate", "");
+      item.setField("libraryCatalog", "");
+      item.setField("extra", "");
+      item.addTag("CVPR'25");
+      item.save();
+      found++;
+    }
   }
-  
+  ztoolkit.getGlobal("alert")(
+    `Found ${found} papers in Zotero library that is CVPR2025 paper.`
+  );
 }
 
 function onDialogEvents(type: string) {
