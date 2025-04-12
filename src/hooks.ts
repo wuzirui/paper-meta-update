@@ -6,6 +6,7 @@ import { createZToolkit } from "./utils/ztoolkit";
 async function getSupportedConferences() {
   const response = await fetch(
     "https://wuzirui.github.io/conference-accepted-papers/conf/index.json",
+    { cache: "no-store" },
   );
   if (!response.ok) {
     throw new Error(`Failed to fetch conferences: ${response.statusText}`);
