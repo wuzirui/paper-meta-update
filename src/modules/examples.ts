@@ -1,53 +1,33 @@
-
-function getSupportedConferences() {
-  const conferences = {
-    "CVPR'25": "CVPR 2025",
-    "CVPR'24": "CVPR 2024",
-    "CVPR'23": "CVPR 2023",
-    // "CVPR'22": "CVPR 2022",
-    // "CVPR'21": "CVPR 2021",
-    // "CVPR'20": "CVPR 2020",
-    // "CVPR'19": "CVPR 2019",
-    // "CVPR'18": "CVPR 2018",
-    // "CVPR'17": "CVPR 2017",
-    // "CVPR'16": "CVPR 2016",
-    // "CVPR'15": "CVPR 2015",
-    // "CVPR'14": "CVPR 2014",
-    // "CVPR'13": "CVPR 2013",
-  };
-  return conferences;
-}
-
-function getConfWebsites(ConfName: string) {
-  const webs = {
-    "CVPR'25": ["https://wuzirui.github.io/conference-accepted-papers/conf/CVPR/2025.json"],
-    "CVPR'24": ["https://wuzirui.github.io/conference-accepted-papers/conf/CVPR/2024.json"],
-    "CVPR'23": ["https://wuzirui.github.io/conference-accepted-papers/conf/CVPR/2023.json"],
-    "CVPR'22": ["https://openaccess.thecvf.com/CVPR2022?day=all"],
-    "CVPR'21": ["https://openaccess.thecvf.com/CVPR2021?day=all"],
-    "CVPR'20": [
-      "https://openaccess.thecvf.com/CVPR2020?day=2020-06-16",
-      "https://openaccess.thecvf.com/CVPR2020?day=2020-06-17",
-      "https://openaccess.thecvf.com/CVPR2020?day=2020-06-18"
-    ],
-    "CVPR'19": [
-      "https://openaccess.thecvf.com/CVPR2019?day=2019-06-18",
-      "https://openaccess.thecvf.com/CVPR2019?day=2019-06-19",
-      "https://openaccess.thecvf.com/CVPR2019?day=2019-06-20"
-    ],
-    "CVPR'18": [
-      "https://openaccess.thecvf.com/CVPR2018?day=2018-06-19",
-      "https://openaccess.thecvf.com/CVPR2018?day=2018-06-20",
-      "https://openaccess.thecvf.com/CVPR2018?day=2018-06-21"
-    ],
-    "CVPR'17": ["https://openaccess.thecvf.com/CVPR2017"],
-    "CVPR'16": ["https://openaccess.thecvf.com/CVPR2016"],
-    "CVPR'15": ["https://openaccess.thecvf.com/CVPR2015"],
-    "CVPR'14": ["https://openaccess.thecvf.com/CVPR2014"],
-    "CVPR'13": ["https://openaccess.thecvf.com/CVPR2013"],
-  }
-  return webs[ConfName];
-}
+// function getConfWebsites(ConfName: string) {
+//   const webs = {
+//     "CVPR'25": ["https://wuzirui.github.io/conference-accepted-papers/conf/CVPR/2025.json"],
+//     "CVPR'24": ["https://wuzirui.github.io/conference-accepted-papers/conf/CVPR/2024.json"],
+//     "CVPR'23": ["https://wuzirui.github.io/conference-accepted-papers/conf/CVPR/2023.json"],
+//     "CVPR'22": ["https://openaccess.thecvf.com/CVPR2022?day=all"],
+//     "CVPR'21": ["https://openaccess.thecvf.com/CVPR2021?day=all"],
+//     "CVPR'20": [
+//       "https://openaccess.thecvf.com/CVPR2020?day=2020-06-16",
+//       "https://openaccess.thecvf.com/CVPR2020?day=2020-06-17",
+//       "https://openaccess.thecvf.com/CVPR2020?day=2020-06-18"
+//     ],
+//     "CVPR'19": [
+//       "https://openaccess.thecvf.com/CVPR2019?day=2019-06-18",
+//       "https://openaccess.thecvf.com/CVPR2019?day=2019-06-19",
+//       "https://openaccess.thecvf.com/CVPR2019?day=2019-06-20"
+//     ],
+//     "CVPR'18": [
+//       "https://openaccess.thecvf.com/CVPR2018?day=2018-06-19",
+//       "https://openaccess.thecvf.com/CVPR2018?day=2018-06-20",
+//       "https://openaccess.thecvf.com/CVPR2018?day=2018-06-21"
+//     ],
+//     "CVPR'17": ["https://openaccess.thecvf.com/CVPR2017"],
+//     "CVPR'16": ["https://openaccess.thecvf.com/CVPR2016"],
+//     "CVPR'15": ["https://openaccess.thecvf.com/CVPR2015"],
+//     "CVPR'14": ["https://openaccess.thecvf.com/CVPR2014"],
+//     "CVPR'13": ["https://openaccess.thecvf.com/CVPR2013"],
+//   }
+//   return webs[ConfName];
+// }
 
 function example(
   target: any,
@@ -69,13 +49,16 @@ function example(
 
 export class PromptExampleFactory {
   @example
-  static registerNormalCommandExample(hooks: any) {
-    const conferences = getSupportedConferences();
-    const entries = Object.keys(conferences).map((conf) => ({
-      name: `Process All ${conferences[conf]} Papers`,
+  static registerNormalCommandExample(conferences, hooks: any) {
+    const entries = Object.entries(conferences).map(([conf, website]) => ({
+      name: `Process All ${conf} Papers`,
       label: "Paper Metadata Update",
-      callback(prompt) {
-      hooks(conf, getConfWebsites(conf));
+      callback: async (prompt) => {
+        if (website) {
+          await hooks(conf, website);
+        } else {
+          ztoolkit.getGlobal("alert")(`No website found for ${conf}`);
+        }
       },
     }));
 

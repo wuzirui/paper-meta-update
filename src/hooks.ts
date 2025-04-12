@@ -5,6 +5,16 @@ import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
 
+async function getSupportedConferences() {
+  const response = await fetch("https://wuzirui.github.io/conference-accepted-papers/conf/index.json");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch conferences: ${response.statusText}`);
+  }
+  const conferences = await response.json();
+  return conferences;
+}
+
+
 async function onStartup() {
   await Promise.all([
     Zotero.initializationPromise,
@@ -13,22 +23,6 @@ async function onStartup() {
   ]);
 
   initLocale();
-
-  // BasicExampleFactory.registerPrefs();
-
-  // BasicExampleFactory.registerNotifier();
-
-  // KeyExampleFactory.registerShortcuts();
-
-  // await UIExampleFactory.registerExtraColumn();
-
-  // await UIExampleFactory.registerExtraColumnWithCustomCell();
-
-  // UIExampleFactory.registerItemPaneCustomInfoRow();
-
-  // UIExampleFactory.registerItemPaneSection();
-
-  // UIExampleFactory.registerReaderItemPaneSection();
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -56,7 +50,9 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     .show();
 
 
-  PromptExampleFactory.registerNormalCommandExample(processConfMetadata);
+  let confs = await getSupportedConferences();
+
+  PromptExampleFactory.registerNormalCommandExample(confs, processConfMetadata);
 
   popupWin.changeLine({
     progress: 100,
