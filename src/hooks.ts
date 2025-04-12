@@ -1,6 +1,6 @@
 import { PromptExampleFactory } from "./modules/examples";
-import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
+import { getPref, setPref } from "./utils/prefs";
 import { createZToolkit } from "./utils/ztoolkit";
 
 async function getSupportedConferences() {
@@ -28,6 +28,27 @@ async function onStartup() {
   );
 }
 
+function getPrefConferences() {
+  const localPrefConfs = getPref("conferences");
+  if (!localPrefConfs) {
+    setPref("conferences", "[]");
+    ztoolkit.getGlobal("alert")(
+      getString("prefs-conferences-not-found"),
+    );
+    return [];
+  }
+  try {
+    const parsedConfs = JSON.parse(String(localPrefConfs));
+    if (!Array.isArray(parsedConfs) || !parsedConfs.every((item) => typeof item === "string")) {
+      throw new Error("Invalid format");
+    }
+    return parsedConfs;
+  } catch {
+    setPref("conferences", "[]");
+    return [];
+  }
+}
+
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   // Create ztoolkit for every window
   addon.data.ztoolkit = createZToolkit();
@@ -49,6 +70,27 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     .show();
 
   const confs = await getSupportedConferences();
+  const localConfs = getPrefConferences();
+  ztoolkit.log("Conferences from server:", confs);
+  ztoolkit.log("Conferences from local:", localConfs);
+  if (Object.keys(confs).length > localConfs.length) {
+    ztoolkit.log("Updating conferences...");
+    const newConfs = Object.keys(confs).filter((conf) => !localConfs.includes(conf));
+    const popupWin1 = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
+        closeOnClick: true,
+        closeTime: -1,  
+      },
+    )
+      .createLine({
+        text: `New conferences found: ${newConfs.join(", ")}`,
+        type: "default",
+        progress: 100,
+      })
+      .show();
+    popupWin1.startCloseTimer(5000);
+    setPref("conferences", JSON.stringify(Object.keys(confs)));
+
+  }
 
   PromptExampleFactory.registerNormalCommandExample(confs, processConfMetadata);
 
@@ -72,58 +114,6 @@ function onShutdown(): void {
   // @ts-ignore - Plugin instance is not typed
   delete Zotero[addon.data.config.addonInstance];
 }
-
-/**
- * This function is just an example of dispatcher for Notify events.
- * Any operations should be placed in a function to keep this funcion clear.
- */
-async function onNotify(
-  event: string,
-  type: string,
-  ids: Array<string | number>,
-  extraData: { [key: string]: any },
-) {
-  // You can add your code to the corresponding notify type
-  ztoolkit.log("notify", event, type, ids, extraData);
-  if (
-    event == "select" &&
-    type == "tab" &&
-    extraData[ids[0]].type == "reader"
-  ) {
-    BasicExampleFactory.exampleNotifierCallback();
-  } else {
-    return;
-  }
-}
-
-/**
- * This function is just an example of dispatcher for Preference UI events.
- * Any operations should be placed in a function to keep this funcion clear.
- * @param type event type
- * @param data event data
- */
-async function onPrefsEvent(type: string, data: { [key: string]: any }) {
-  switch (type) {
-    case "load":
-      registerPrefsScripts(data.window);
-      break;
-    default:
-      return;
-  }
-}
-
-// function onShortcuts(type: string) {
-//   switch (type) {
-//     case "larger":
-//       KeyExampleFactory.exampleShortcutLargerCallback();
-//       break;
-//     case "smaller":
-//       KeyExampleFactory.exampleShortcutSmallerCallback();
-//       break;
-//     default:
-//       break;
-//   }
-// }
 
 async function fetchConfMetadata(url: string) {
   const papers: { title: string; authors: string[] }[] = [];
@@ -282,7 +272,4 @@ export default {
   onShutdown,
   onMainWindowLoad,
   onMainWindowUnload,
-  onNotify,
-  onPrefsEvent,
-  // onShortcuts,
 };
