@@ -1,7 +1,5 @@
 import {
-  BasicExampleFactory,
   PromptExampleFactory,
-  UIExampleFactory
 } from "./modules/examples";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
@@ -57,27 +55,8 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     })
     .show();
 
-  // await Zotero.Promise.delay(1000);
-  // popupWin.changeLine({
-  //   progress: 30,
-  //   text: `[30%] ${getString("startup-begin")}`,
-  // });
-
-  UIExampleFactory.registerStyleSheet(win);
-
-  UIExampleFactory.registerRightClickMenuItem();
-
-  UIExampleFactory.registerRightClickMenuPopup(win);
-
-  UIExampleFactory.registerWindowMenuWithSeparator();
 
   PromptExampleFactory.registerNormalCommandExample(processConfMetadata);
-
-  // PromptExampleFactory.registerAnonymousCommandExample(win);
-
-  // PromptExampleFactory.registerConditionalCommandExample();
-
-  await Zotero.Promise.delay(1000);
 
   popupWin.changeLine({
     progress: 100,
@@ -85,7 +64,6 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   });
   popupWin.startCloseTimer(5000);
 
-  addon.hooks.onDialogEvents("dialogExample");
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
@@ -157,39 +135,43 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 
 async function fetchConfMetadata(url: string) {
   const papers: { title: string; authors: string[] }[] = [];
+  let conferenceMetadata: {
+    conferenceName: string;
+    proceedingName: string;
+    year: string;
+    publisher: string;
+  } | null = null;
+
   try {
-    // Fetch the webpage content
+    // Fetch the JSON content
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const htmlContent = await response.text();
+    const jsonData = await response.json();
 
-    // Parse the HTML content using DOMParser
-    const parser = new DOMParser();
-    const document = parser.parseFromString(htmlContent, "text/html");
+    // Extract conference metadata
+    conferenceMetadata = {
+      conferenceName: jsonData["Conference Name"] || "Unknown Conference",
+      proceedingName: jsonData["Proceeding Name"] || "Unknown Proceedings",
+      year: jsonData["Year"] || "Unknown Year",
+      publisher: jsonData["Publisher"] || "Unknown Publisher",
+    };
 
-    // Extract paper titles and authors
-    const rows = document.querySelectorAll("tr"); // Iterate over table rows
-    rows.forEach((row) => {
-      // Find the title in <strong> or <a>
-      const titleTag = row.querySelector("strong") || row.querySelector("a");
-      const authorsTag = row.querySelector("div.indented"); // Find authors in <div class="indented">
-
-      if (titleTag && authorsTag) {
-        const title = titleTag.textContent?.trim() || "Unknown Title";
-        const authors = authorsTag.textContent
-          ?.split("·")
-          .map((author) => author.trim()) || [];
-        papers.push({ title, authors });
-      }
+    // Extract papers
+    const papersData = jsonData["Papers"] || [];
+    papersData.forEach((paper: { Title: string; Authors: string[] }) => {
+      const title = paper.Title || "Unknown Title";
+      const authors = paper.Authors || [];
+      papers.push({ title, authors });
     });
   } catch (error) {
     ztoolkit.getGlobal("alert")(
       `Error fetching conference metadata: ${error.message}`
     );
   }
-  return papers;
+
+  return { conferenceMetadata, papers };
 }
 
 async function debugNotice(msg) {
@@ -200,9 +182,8 @@ async function debugNotice(msg) {
 }
 
 
-async function processConfMetadata(confname: string, confurl: string, confproceedings: string, conffullname: string, confpublisher: string) {
-
-  // initialize a progress window
+async function processConfMetadata(confname: string, confurl: string) {
+  // Initialize a progress window
   const popupWin = new ztoolkit.ProgressWindow(`Updating ${confname} Metadata`, {
     closeOnClick: true,
     closeTime: -1,
@@ -214,41 +195,52 @@ async function processConfMetadata(confname: string, confurl: string, confprocee
     })
     .show();
 
-  const papers = await fetchConfMetadata(confurl);
+  // Fetch conference metadata and papers
+  const { conferenceMetadata, papers } = await fetchConfMetadata(confurl);
+
+  if (!conferenceMetadata) {
+    popupWin.changeLine({
+      progress: 100,
+      text: `Failed to fetch metadata for ${confname}.`,
+    });
+    popupWin.startCloseTimer(5000);
+    return;
+  }
+
+  const { proceedingName, conferenceName, publisher } = conferenceMetadata;
   const numPapers = papers.length;
+
   popupWin.changeLine({
     progress: 0.1,
     text: `Fetched ${numPapers} papers from ${confname}.`,
   });
 
-  // process every paper
+  // Process each paper
   let found = 0;
   for (let i = 0; i < papers.length; i++) {
     const paper = papers[i];
     const title = paper.title;
     const authors = paper.authors;
     const progress = Math.round(((i + 1) / numPapers) * 100);
-    
-    // find if the item exist in zotero library
+
+    // Search for the paper in Zotero library
     const search = new Zotero.Search();
     search.addCondition("title", "is", title);
     const itemIds = await search.search();
+
     if (itemIds.length > 0) {
       popupWin.changeLine({
         progress: progress,
-        text: `[${progress}%] ${title} by ${authors}`,
+        text: `[${progress}%] Updating: ${title}`,
       });
 
-      debugNotice(
-        `Updating ${title} by ${authors} with ${confname} metadata...`
-      );
-      // update the metadata
-      const item = await Zotero.Items.getAsync(itemIds[0]);
-      debugNotice(`Found item: ${item}`);
-      await item.setType(11); // Set type to "Conference Paper"
-      debugNotice(`Set type to Conference Paper`);
+      debugNotice(`Updating ${title} with ${confname} metadata...`);
 
-      // construct author list
+      // Update the metadata
+      const item = await Zotero.Items.getAsync(itemIds[0]);
+      await item.setType(11); // Set type to "Conference Paper"
+
+      // Construct author list
       const creators = authors.map((author) => {
         const [firstName, lastName] = author.split(" ");
         return {
@@ -258,35 +250,35 @@ async function processConfMetadata(confname: string, confurl: string, confprocee
         };
       });
       await item.setCreators(creators);
-      debugNotice(`Set authors: ${creators}`);
-      await item.setField("proceedingsTitle", confproceedings);
-      await item.setField("conferenceName", conffullname);
-      await item.setField("publisher", confpublisher);
+
+      // Set metadata fields
+      await item.setField("proceedingsTitle", proceedingName);
+      await item.setField("conferenceName", conferenceName);
+      await item.setField("publisher", publisher);
       await item.setField("DOI", "");
       await item.setField("extra", "");
       await item.setField("accessDate", "");
       await item.setField("libraryCatalog", "");
-      await item.setField("extra", "");
-      debugNotice(`Set metadata: ${confproceedings}, ${conffullname}, ${confpublisher}`);
+
+      // Add a tag for the conference
       await item.addTag(confname, 1);
+
+      // Save the updated item
       await item.saveTx();
-      debugNotice(`Saved item: ${item}`);
+      debugNotice(`Saved item: ${title}`);
       found++;
     }
   }
-  ztoolkit.getGlobal("alert")(
-    `Found ${found} papers in Zotero library that is ${confname} paper.`
-  );
-}
 
-function onDialogEvents(type: string) {
-  switch (type) {
-    case "CVPR2025":
-      processConfMetadata();
-      break;
-    default:
-      break;
-  }
+  popupWin.changeLine({
+    progress: 100,
+    text: `Processed ${numPapers} papers. Found ${found} in Zotero library.`,
+  });
+  popupWin.startCloseTimer(5000);
+
+  ztoolkit.getGlobal("alert")(
+    `Found ${found} papers in Zotero library for ${confname}.`
+  );
 }
 
 // Add your hooks here. For element click, etc.
@@ -301,5 +293,4 @@ export default {
   onNotify,
   onPrefsEvent,
   // onShortcuts,
-  onDialogEvents,
 };
