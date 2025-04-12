@@ -1,20 +1,20 @@
 {
-  "name": "Paper Meta Update",
+  "name": "Paper Metadata Update",
   "type": "module",
   "version": "0.0.0",
-  "description": "Paper Meta Update",
+  "description": "Update arxiv paper to latest metadata",
   "config": {
-    "addonName": "Paper Meta Update",
-    "addonID": "paper-meta-update@tztyun.org",
-    "addonRef": "papermetaupdate",
-    "addonInstance": "papermetaupdate",
+    "addonName": "Paper Metadata Update",
+    "addonID": "zotero-addon-template@tztyun.org",
+    "addonRef": "papermetadataupdate",
+    "addonInstance": "papermetadataupdate",
     "prefsPrefix": "extensions.zotero.papermetaupdate"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wuzirui/paper-meta-update.git"
   },
-  "author": "wuzirui",
+  "author": "windingwind",
   "bugs": {
     "url": "https://github.com/wuzirui/paper-meta-update/issues"
   },
@@ -30,6 +30,9 @@
     "update-deps": "npm update --save"
   },
   "dependencies": {
+    "https": "^1.0.0",
+    "jsdom": "^26.0.0",
+    "node-fetch": "^3.3.2",
     "zotero-plugin-toolkit": "^5.0.0-0"
   },
   "devDependencies": {
