@@ -1,7 +1,7 @@
 {
   "name": "Paper Metadata Update",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Update arxiv paper to latest metadata",
   "config": {
     "addonName": "Paper Metadata Update",
