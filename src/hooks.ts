@@ -1,19 +1,18 @@
-import {
-  PromptExampleFactory,
-} from "./modules/examples";
+import { PromptExampleFactory } from "./modules/examples";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
 
 async function getSupportedConferences() {
-  const response = await fetch("https://wuzirui.github.io/conference-accepted-papers/conf/index.json");
+  const response = await fetch(
+    "https://wuzirui.github.io/conference-accepted-papers/conf/index.json",
+  );
   if (!response.ok) {
     throw new Error(`Failed to fetch conferences: ${response.statusText}`);
   }
   const conferences = await response.json();
   return conferences;
 }
-
 
 async function onStartup() {
   await Promise.all([
@@ -49,8 +48,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     })
     .show();
 
-
-  let confs = await getSupportedConferences();
+  const confs = await getSupportedConferences();
 
   PromptExampleFactory.registerNormalCommandExample(confs, processConfMetadata);
 
@@ -59,7 +57,6 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     text: `[100%] ${getString("startup-finish")}`,
   });
   popupWin.startCloseTimer(5000);
-
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
@@ -128,7 +125,6 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 //   }
 // }
 
-
 async function fetchConfMetadata(url: string) {
   const papers: { title: string; authors: string[] }[] = [];
   let conferenceMetadata: {
@@ -163,7 +159,7 @@ async function fetchConfMetadata(url: string) {
     });
   } catch (error) {
     ztoolkit.getGlobal("alert")(
-      `Error fetching conference metadata: ${error.message}`
+      `Error fetching conference metadata: ${error.message}`,
     );
   }
 
@@ -172,18 +168,18 @@ async function fetchConfMetadata(url: string) {
 
 async function debugNotice(msg) {
   return;
-  ztoolkit.getGlobal("alert")(
-    `Debug Notice: ${msg}`
-  );
+  ztoolkit.getGlobal("alert")(`Debug Notice: ${msg}`);
 }
-
 
 async function processConfMetadata(confname: string, confurl: string) {
   // Initialize a progress window
-  const popupWin = new ztoolkit.ProgressWindow(`Updating ${confname} Metadata`, {
-    closeOnClick: true,
-    closeTime: -1,
-  })
+  const popupWin = new ztoolkit.ProgressWindow(
+    `Updating ${confname} Metadata`,
+    {
+      closeOnClick: true,
+      closeTime: -1,
+    },
+  )
     .createLine({
       text: `Fetching ${confname} metadata...`,
       type: "default",
@@ -273,7 +269,7 @@ async function processConfMetadata(confname: string, confurl: string) {
   popupWin.startCloseTimer(5000);
 
   ztoolkit.getGlobal("alert")(
-    `Found ${found} papers in Zotero library for ${confname}.`
+    `Found ${found} papers in Zotero library for ${confname}.`,
   );
 }
 
