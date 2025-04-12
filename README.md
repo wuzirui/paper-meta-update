@@ -25,3 +25,18 @@ This project is a Zotero plugin designed to update metadata for preprints after 
    ![usage image](assets/image.png)
 3. Let the plugin finish processing.
    ![before after](assets/image-1.png)
+
+### Listed Conferences
+
+The plugin automatically fetches and updates the list of supported conferences from the source. This ensures that the metadata is always up-to-date with the latest conference proceedings.
+
+- Current listed conferences include:
+  ![Listed Conferences](https://wuzirui.github.io/conference-accepted-papers/conf/index.json)
+
+- Upcoming:
+  - CVPR/ICCV before 2020;
+  - ECCV;
+  - NeurIPS;
+  - ICLR;
+  - IROS/ICRA/RSS;
+  - More upon request (Issues/PRs welcomed!)...
