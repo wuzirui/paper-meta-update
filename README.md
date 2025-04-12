@@ -3,11 +3,9 @@
 [![zotero target version](https://img.shields.io/badge/Zotero-7-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
 [![Using Zotero Plugin Template](https://img.shields.io/badge/Using-Zotero%20Plugin%20Template-blue?style=flat-square&logo=github)](https://github.com/windingwind/zotero-plugin-template)
 
-This project is a Zotero plugin designed to update metadata for preprints after they are published. It leverages the Zotero API and integrates with external services like Semantic Scholar to fetch and update metadata.
-
 ---
 
-> **Automatic Metadata Updates**: Automatically updates metadata for **preprints** in Zotero when they are **published** in conferences.
+> **Automatic Metadata Updates**: Automatically updates metadata for **preprints** in Zotero when they are **published** in _conferences_.
 
 ### Installation
 
