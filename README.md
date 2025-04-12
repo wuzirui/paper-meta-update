@@ -31,7 +31,11 @@ This project is a Zotero plugin designed to update metadata for preprints after 
 The plugin automatically fetches and updates the list of supported conferences from the source. This ensures that the metadata is always up-to-date with the latest conference proceedings.
 
 - Current listed conferences include:
-  ![Listed Conferences](https://wuzirui.github.io/conference-accepted-papers/conf/index.json)
+
+  - CVPR 2021~2025;
+  - ICCV 2021, 2023;
+  - WACV 2020~2025;
+  - Find the full list [here](https://wuzirui.github.io/conference-accepted-papers/conf/index.json).
 
 - Upcoming:
   - CVPR/ICCV before 2020;
