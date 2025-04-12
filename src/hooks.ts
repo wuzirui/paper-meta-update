@@ -32,14 +32,15 @@ function getPrefConferences() {
   const localPrefConfs = getPref("conferences");
   if (!localPrefConfs) {
     setPref("conferences", "[]");
-    ztoolkit.getGlobal("alert")(
-      getString("prefs-conferences-not-found"),
-    );
+    ztoolkit.getGlobal("alert")(getString("prefs-conferences-not-found"));
     return [];
   }
   try {
     const parsedConfs = JSON.parse(String(localPrefConfs));
-    if (!Array.isArray(parsedConfs) || !parsedConfs.every((item) => typeof item === "string")) {
+    if (
+      !Array.isArray(parsedConfs) ||
+      !parsedConfs.every((item) => typeof item === "string")
+    ) {
       throw new Error("Invalid format");
     }
     return parsedConfs;
@@ -69,18 +70,22 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     })
     .show();
 
-  const confs = await getSupportedConferences();
+  const confs = (await getSupportedConferences()) as unknown as Record<
+    string,
+    string
+  >;
   const localConfs = getPrefConferences();
   ztoolkit.log("Conferences from server:", confs);
   ztoolkit.log("Conferences from local:", localConfs);
   if (Object.keys(confs).length > localConfs.length) {
     ztoolkit.log("Updating conferences...");
-    const newConfs = Object.keys(confs).filter((conf) => !localConfs.includes(conf));
+    const newConfs = Object.keys(confs).filter(
+      (conf) => !localConfs.includes(conf),
+    );
     const popupWin1 = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-        closeOnClick: true,
-        closeTime: -1,  
-      },
-    )
+      closeOnClick: true,
+      closeTime: -1,
+    })
       .createLine({
         text: `New conferences found: ${newConfs.join(", ")}`,
         type: "default",
@@ -89,7 +94,6 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
       .show();
     popupWin1.startCloseTimer(5000);
     setPref("conferences", JSON.stringify(Object.keys(confs)));
-
   }
 
   PromptExampleFactory.registerNormalCommandExample(confs, processConfMetadata);
@@ -115,6 +119,14 @@ function onShutdown(): void {
   delete Zotero[addon.data.config.addonInstance];
 }
 
+interface ConferenceMetadata {
+  "Conference Name": string;
+  "Proceeding Name": string;
+  Year: string;
+  Publisher: string;
+  Papers: { Title: string; Authors: string[] }[];
+}
+
 async function fetchConfMetadata(url: string) {
   const papers: { title: string; authors: string[] }[] = [];
   let conferenceMetadata: {
@@ -125,38 +137,35 @@ async function fetchConfMetadata(url: string) {
   } | null = null;
 
   try {
-    // Fetch the JSON content
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const jsonData = await response.json();
+    const jsonData = (await response.json()) as unknown as ConferenceMetadata;
 
-    // Extract conference metadata
     conferenceMetadata = {
       conferenceName: jsonData["Conference Name"] || "Unknown Conference",
       proceedingName: jsonData["Proceeding Name"] || "Unknown Proceedings",
-      year: jsonData["Year"] || "Unknown Year",
-      publisher: jsonData["Publisher"] || "Unknown Publisher",
+      year: jsonData.Year || "Unknown Year",
+      publisher: jsonData.Publisher || "Unknown Publisher",
     };
 
-    // Extract papers
-    const papersData = jsonData["Papers"] || [];
-    papersData.forEach((paper: { Title: string; Authors: string[] }) => {
+    const papersData = jsonData.Papers || [];
+    papersData.forEach((paper) => {
       const title = paper.Title || "Unknown Title";
       const authors = paper.Authors || [];
       papers.push({ title, authors });
     });
   } catch (error) {
     ztoolkit.getGlobal("alert")(
-      `Error fetching conference metadata: ${error.message}`,
+      `Error fetching conference metadata: ${(error as Error).message}`,
     );
   }
 
   return { conferenceMetadata, papers };
 }
 
-async function debugNotice(msg) {
+async function debugNotice(msg: string) {
   return;
   ztoolkit.getGlobal("alert")(`Debug Notice: ${msg}`);
 }
@@ -228,7 +237,7 @@ async function processConfMetadata(confname: string, confurl: string) {
         return {
           firstName: firstName || "",
           lastName: lastName || "",
-          creatorType: "author",
+          creatorType: "author" as const,
         };
       });
       await item.setCreators(creators);
