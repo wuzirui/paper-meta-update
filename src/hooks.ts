@@ -234,7 +234,9 @@ async function processConfMetadata(confname: string, confurl: string) {
 
       // Construct author list
       const creators = authors.map((author) => {
-        const [firstName, lastName] = author.split(" ");
+        const nameParts = author.trim().split(" ");
+        const lastName = nameParts.pop() || "";
+        const firstName = nameParts.join(" ");
         return {
           firstName: firstName || "",
           lastName: lastName || "",
