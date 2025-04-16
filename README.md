@@ -30,15 +30,18 @@ The plugin automatically fetches and updates the list of supported conferences f
 
 - Current listed conferences include:
 
-  - CVPR 2021~2025;
-  - ICCV 2021, 2023;
+  - CVPR 2013~2025;
+  - ICCV 2013, 2023;
   - WACV 2020~2025;
   - Find the full list [here](https://wuzirui.github.io/conference-accepted-papers/conf/index.json).
 
 - Upcoming:
-  - CVPR/ICCV before 2020;
   - ECCV;
   - NeurIPS;
   - ICLR;
   - IROS/ICRA/RSS;
   - More upon request (Issues/PRs welcomed!)...
+
+### Updates
+
+1. [2025-04-16] Use case insensitive search instead of sensitive, will make the search a bit slower.

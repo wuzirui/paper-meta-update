@@ -217,10 +217,25 @@ async function processConfMetadata(confname: string, confurl: string) {
 
     // Search for the paper in Zotero library
     const search = new Zotero.Search();
-    search.addCondition("title", "is", title);
+    search.addCondition("title", "beginsWith", title);
     const itemIds = await search.search();
 
     if (itemIds.length > 0) {
+      let id = -1;
+      // iterative through all items, find the one with the same title
+      for (let j = 0; j < itemIds.length; j++) {
+        const item = await Zotero.Items.getAsync(itemIds[j]);
+        if (item.getField("title").toLowerCase() === title.toLowerCase()) {
+          id = itemIds[j];
+          break;
+        }
+      }
+      if (id === -1) {
+        continue;
+      }
+      // Update the metadata
+      const item = await Zotero.Items.getAsync(itemIds[0]);
+
       popupWin.changeLine({
         progress: progress,
         text: `[${progress}%] Updating: ${title}`,
@@ -228,8 +243,6 @@ async function processConfMetadata(confname: string, confurl: string) {
 
       debugNotice(`Updating ${title} with ${confname} metadata...`);
 
-      // Update the metadata
-      const item = await Zotero.Items.getAsync(itemIds[0]);
       await item.setType(11); // Set type to "Conference Paper"
 
       // Construct author list
